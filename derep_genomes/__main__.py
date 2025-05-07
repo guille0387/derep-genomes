@@ -61,6 +61,7 @@ def process_one_taxon(taxon, parms):
     failed_df = None
     dashing = parms["dashing"]
     assm_max = parms["assm_max"]
+    assm_max_post = parms["assm_max_post"]
     threads = parms["threads"]
 
     log.debug("Dereplicating {}".format(taxon))
@@ -138,6 +139,7 @@ def process_one_taxon(taxon, parms):
             min_genome_size=min_genome_size,
             ani_fraglen_fraction=ani_fraglen_fraction,
             assm_max=assm_max,
+            assm_max_post=assm_max_post,
         )
 
         if failed is not None:
@@ -591,6 +593,7 @@ def main():
     if not to_do.empty:
         assm_min = 2
         assm_max = args.assm_max
+        assm_max_post = args.assm_max_post
 
         log.info("Splitting taxa in between singleton and non-singleton taxa")
 
@@ -670,6 +673,7 @@ def main():
                 "ani_fraglen_fraction": args.ani_fraglen_fraction,
                 "dashing": args.dashing,
                 "assm_max": assm_max,
+                "assm_max_post": assm_max_post,
                 "out_dir": args.out_dir,
                 # "con": con,
                 "copy": args.copy,
@@ -758,6 +762,7 @@ def main():
                 "ani_fraglen_fraction": args.ani_fraglen_fraction,
                 "dashing": args.dashing,
                 "assm_max": assm_max,
+                "assm_max_post": assm_max_post,
                 "out_dir": args.out_dir,
                 "copy": args.copy,
             }

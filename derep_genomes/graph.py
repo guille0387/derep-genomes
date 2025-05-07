@@ -1178,6 +1178,7 @@ def dereplicate_ANI(
     max_jobs_array,
     min_genome_size,
     ani_fraglen_fraction,
+    assm_max_post,
     assm_max=10,
 ):
     """
@@ -1192,7 +1193,7 @@ def dereplicate_ANI(
     all_assemblies_tmp = all_assemblies.copy()
     with tempfile.TemporaryDirectory(dir=tmp_dir, prefix="gderep-") as temp_dir:
         failed = None
-        if n_assemblies <= 100 or slurm_config is None:
+        if n_assemblies <= assm_max_post or slurm_config is None:
             if (n_assemblies * n_assemblies) < threads:
                 threads = n_assemblies * n_assemblies
             log.debug(

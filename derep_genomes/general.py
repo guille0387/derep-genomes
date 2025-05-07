@@ -75,6 +75,7 @@ help_msg = {
     "min_genome_size": "Minimum genome size where to apply heuristics to find ANI fragment size",
     "ani_fraglen_fraction": "Fraction of the genome size used to estimate the ANI used fragment length",
     "assm_max": "Maximum number of assemblies to process for small batches",
+    "assm_max_post":"Maximum number of assemblies post xash dereplication for ANI calculation with single batch",
     "dashing": "Use Dashing instead of Mash",
 }
 
@@ -128,7 +129,7 @@ def get_arguments(argv=None):
         type=int,
         metavar="INT",
         dest="slurm_threads",
-        default=2,
+        default=8,
         help=help_msg["slurm_threads"],
     )
     optional.add_argument(
@@ -169,8 +170,16 @@ def get_arguments(argv=None):
         type=int,
         metavar="INT",
         dest="assm_max",
-        default=10,
+        default=1000,
         help=help_msg["assm_max"],
+    )
+    optional.add_argument(
+        "--max-assemblies-post",
+        type=int,
+        metavar="INT",
+        dest="assm_max_post",
+        default=100,
+        help=help_msg["assm_max_post"],
     )
     slurm.add_argument(
         "--slurm-config",
