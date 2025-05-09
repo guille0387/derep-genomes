@@ -77,6 +77,7 @@ help_msg = {
     "assm_max": "Maximum number of assemblies to process for small batches",
     "assm_max_post":"Maximum number of assemblies post xash dereplication for ANI calculation with single batch",
     "dashing": "Use Dashing instead of Mash",
+    "skani": "Use skani instead of fastANI",
 }
 
 
@@ -225,6 +226,11 @@ def get_arguments(argv=None):
         "--dashing",
         action="store_true",
         help=help_msg["dashing"],
+    )
+    optional.add_argument(
+        "--skani",
+        action="store_true",
+        help=help_msg["skani"],
     )
     optional.add_argument(
         "--out-dir",

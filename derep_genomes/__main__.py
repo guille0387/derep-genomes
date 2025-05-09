@@ -472,10 +472,17 @@ def main():
     if not command_exists("dashing"):
         log.error("dashing not found in PATH")
         sys.exit(1)
+    if not command_exists("skani"):
+        log.error("skani not found in PATH")
+        sys.exit(1)
     if args.dashing:
         log.debug("Using dashing")
     else:
         log.debug("Using mash")
+    if args.skani:
+        log.debug("Using skani")
+    else:
+        log.debug("Using fastANI")
 
     if args.copy:
         out_dir = pathlib.Path(args.out_dir).absolute()
@@ -672,6 +679,7 @@ def main():
                 "min_genome_size": args.min_genome_size,
                 "ani_fraglen_fraction": args.ani_fraglen_fraction,
                 "dashing": args.dashing,
+                "skani": args.skani,
                 "assm_max": assm_max,
                 "assm_max_post": assm_max_post,
                 "out_dir": args.out_dir,
@@ -761,6 +769,7 @@ def main():
                 "min_genome_size": args.min_genome_size,
                 "ani_fraglen_fraction": args.ani_fraglen_fraction,
                 "dashing": args.dashing,
+                "skani": args.skani,
                 "assm_max": assm_max,
                 "assm_max_post": assm_max_post,
                 "out_dir": args.out_dir,
