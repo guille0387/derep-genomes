@@ -1,4 +1,4 @@
-name: derep-genomes
+name: derep-genomes-skani
 channels:
   - conda-forge
   - bioconda
@@ -9,3 +9,4 @@ dependencies:
   - python==3.9
   - mash=>2.2.2
   - dashing>=0.4.0
+  - skani==0.2.2
