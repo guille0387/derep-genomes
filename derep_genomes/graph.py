@@ -291,6 +291,27 @@ def pairwise_fastANI(assemblies, threads, temp_dir, frag_len):
     subprocess.run(fastANI_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return rfile
 
+def pairwise_skani(assemblies, threads, temp_dir):
+    glist = temp_dir + "/assm_list.txt"
+    rfile = temp_dir + "/skani.txt"
+    with open(glist, "w") as outfile:
+        for assm in assemblies:
+            outfile.write("%s\n" % assm)
+
+    skani_cmd = [
+        "skani",
+        "dist",
+        "-t",
+        str(threads),
+        "--ql",
+        glist,
+        "--rl",
+        glist,
+        "-o",
+        rfile,
+    ]
+    subprocess.run(skani_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return rfile
 
 def process_fastANI_results(rfile):
     df = pd.read_csv(
@@ -1180,6 +1201,7 @@ def dereplicate_ANI(
     ani_fraglen_fraction,
     assm_max_post,
     assm_max=10,
+    skani=False
 ):
     """
     This function dereplicates genomes by Taxon by:
@@ -1212,17 +1234,33 @@ def dereplicate_ANI(
                 log.debug("Failed. Reason: Assemblies too short")
                 failed = "Assemblies too short"
                 return None, None, failed, None
+            
+            if not skani:
 
-            ani_results = pairwise_fastANI(
-                assemblies=all_assemblies_tmp["file"].tolist(),
-                threads=threads,
-                temp_dir=temp_dir,
-                frag_len=frag_len,
-            )
+                ani_results = pairwise_fastANI(
+                    assemblies=all_assemblies_tmp["file"].tolist(),
+                    threads=threads,
+                    temp_dir=temp_dir,
+                    frag_len=frag_len,
+                )
 
-            log.debug("Processing ANI results")
-            pairwise_distances = process_fastANI_results(ani_results)
-            log.debug("Obtained {:,} comparisons".format(pairwise_distances.shape[0]))
+                log.debug("Processing ANI results")
+                pairwise_distances = process_fastANI_results(ani_results)
+                log.debug("Obtained {:,} comparisons".format(pairwise_distances.shape[0]))
+
+            else:
+
+                ani_results = pairwise_skani(
+                    assemblies=all_assemblies_tmp["file"].tolist(),
+                    threads=threads,
+                    temp_dir=temp_dir,
+                )
+
+                log.debug("Processing ANI results")
+                pairwise_distances = process_fastANI_results(ani_results)
+                log.debug("Obtained {:,} comparisons".format(pairwise_distances.shape[0]))
+
+
         else:
             n = chunks
             chunks = split_fixed_size(all_assemblies_tmp["file"].tolist(), n)
