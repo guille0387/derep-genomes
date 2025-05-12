@@ -1,4 +1,4 @@
-name: derep-genomes-skani
+name: derep-genomes-dev
 channels:
   - conda-forge
   - bioconda
