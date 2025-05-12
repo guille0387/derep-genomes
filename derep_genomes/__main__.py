@@ -60,6 +60,7 @@ def process_one_taxon(taxon, parms):
     min_genome_size = parms["min_genome_size"]
     failed_df = None
     dashing = parms["dashing"]
+    skani = parms["skani"]
     assm_max = parms["assm_max"]
     assm_max_post = parms["assm_max_post"]
     threads = parms["threads"]
@@ -140,6 +141,7 @@ def process_one_taxon(taxon, parms):
             ani_fraglen_fraction=ani_fraglen_fraction,
             assm_max=assm_max,
             assm_max_post=assm_max_post,
+            skani=skani,
         )
 
         if failed is not None:
