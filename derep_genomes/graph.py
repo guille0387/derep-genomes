@@ -695,8 +695,8 @@ def split_fixed_size(lst, n):
     return splits
 
 
-def map_slurm_jobs(cmds, slurm_config, odir, max_jobs_array, tmp_dir, threads):
-    rfile = os.path.join(odir, "fastANI_out_jobs.txt")
+def map_slurm_jobs(cmds, slurm_config, odir, max_jobs_array, tmp_dir, threads, skani):
+    rfile = os.path.join(odir, "ANI_out_jobs.txt")
     with open(rfile, "w") as outfile:
         for cmd in cmds:
             outfile.write("%s\n" % cmd)
@@ -729,7 +729,7 @@ def map_slurm_jobs(cmds, slurm_config, odir, max_jobs_array, tmp_dir, threads):
     ofiles_list = []
 
     for r in job_ranges:
-        rfile_tmp = os.path.join(odir, "fastANI_out_jobs-tmp.txt")
+        rfile_tmp = os.path.join(odir, "ANI_out_jobs-tmp.txt")
         df1 = df.iloc[(min(r) - 1) : (max(r))]
         df1.columns = ["cmd"]
 
@@ -747,7 +747,7 @@ def map_slurm_jobs(cmds, slurm_config, odir, max_jobs_array, tmp_dir, threads):
         sys.stdout = sys.__stdout__
         job_ids.append(job_id)
     log.debug("Reducing {} jobs from SLURM".format(len(job_ids)))
-    pairwise_distances = reduce_slurm_jobs(fast_flatten(ofiles_list), threads)
+    pairwise_distances = reduce_slurm_jobs(fast_flatten(ofiles_list), threads, skani)
     # pw.append(pairwise_distances)
     return pairwise_distances
 
@@ -787,11 +787,16 @@ def concat_df(frames):
     return df
 
 
-def reduce_slurm_jobs(ofiles, threads):
+def reduce_slurm_jobs(ofiles, threads, skani):
     p = Pool(threads)
-    dfs = list(
-        p.imap(process_fastANI_results, ofiles),
-    )
+    if not skani:
+        dfs = list(
+            p.imap(process_fastANI_results, ofiles),
+        )
+    else:
+        dfs = list(
+            p.imap(process_skani_results, ofiles),
+        )
     p.close()
     p.join()
     dfs = concat_df(dfs)
@@ -1356,13 +1361,17 @@ def dereplicate_ANI(
             )
             # Run slurm array job
             pairwise_distances = map_slurm_jobs(
-                cmds, slurm_config, odir, max_jobs_array, temp_dir, threads
+                cmds, slurm_config, odir, max_jobs_array, temp_dir, threads, skani
             )
             # pairwise_distances = concat_df(pairwise_distances)
             log.debug("Reducing SLURM jobs and processing ANI results")
             # pairwise_distances = reduce_slurm_jobs(ofiles, threads)
 
-        pairwise_distances = generate_ANI_pairwise(pairwise_distances)
+        if not skani:
+            pairwise_distances = generate_ANI_pairwise(pairwise_distances)
+        else:
+            pairwise_distances = generate_ANI_pairwise_skani(pairwise_distances)
+
         pw = check_pw(pw=pairwise_distances, assms=all_assemblies_tmp["file"].tolist())
 
         if pw["failed"]:
