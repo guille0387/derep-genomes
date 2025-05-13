@@ -363,6 +363,37 @@ def generate_ANI_pairwise(df):
         df = df.merge(df1.rename(columns={"assm": "source", "len": "source_len"}))
         df = df.merge(df1.rename(columns={"assm": "target", "len": "target_len"}))
         return df
+    
+def generate_ANI_pairwise_skani(df):
+    df = df.copy()
+    if df.empty:
+        return None
+    else:
+        # sort duplicates in reverse order
+        df.loc[:, ["source", "target"]] = np.sort(df.filter(items=["source", "target"]))
+
+        # Get ANI average for each pairwise comparison
+        df = (
+            df.groupby(["source", "target"])
+            .agg(ANI=("ANI", "mean"), aln_frac=("aln_frac", "max"))
+            .reset_index()
+        )
+
+        df['aln_frac'] = df['aln_frac'] / 100
+        df['weight_raw'] = df['ANI'] / 100
+        df['weight'] = df['weight_raw'] * df['aln_frac']
+        
+        df1 = pd.DataFrame(
+            set(df["source"].tolist() + df["target"].tolist()),
+            columns=["assm"],
+        )
+
+        df1["len"] = df1["assm"].map(lambda x: get_assembly_length(x))
+        # df1["n50"] = df1["assm"].map(lambda x: get_assembly_n50(x))
+
+        df = df.merge(df1.rename(columns={"assm": "source", "len": "source_len"}))
+        df = df.merge(df1.rename(columns={"assm": "target", "len": "target_len"}))
+        return df
 
 
 def binary_search_filter(g, low, high, weights):
