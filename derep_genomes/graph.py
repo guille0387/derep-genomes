@@ -322,6 +322,16 @@ def process_fastANI_results(rfile):
     os.remove(rfile)
     return df
 
+def process_skani_results(rfile):
+    df = pd.read_csv(
+        rfile,
+        sep="\t",
+        usecols=lambda x: x not in ['Ref_name', 'Query_name', 'Align_fraction_ref'],
+        )
+    df.columns = ["source", "target", "ANI", "aln_frac"]
+    os.remove(rfile)
+    return df
+
 
 def generate_ANI_pairwise(df):
     df = df.copy()
