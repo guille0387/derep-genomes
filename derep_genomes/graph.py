@@ -15,7 +15,7 @@ from derep_genomes.general import (
 import logging
 from pathlib import Path
 import os
-from itertools import product, chain
+from itertools import product, chain, combinations_with_replacement
 from simple_slurm import Slurm
 import yaml
 from multiprocessing import Pool
@@ -382,7 +382,7 @@ def generate_ANI_pairwise_skani(df):
         df['aln_frac'] = df['aln_frac'] / 100
         df['weight_raw'] = df['ANI'] / 100
         df['weight'] = df['weight_raw'] * df['aln_frac']
-        
+
         df1 = pd.DataFrame(
             set(df["source"].tolist() + df["target"].tolist()),
             columns=["assm"],
@@ -630,33 +630,60 @@ def save_chunks_to_disk(chunks, temp_dir):
     return file_chunks, wdir
 
 
-def create_slurm_commands(files, wdir, frag_len, slurm_threads):
-    file_list = list(product(files.keys(), files.keys()))
-    file_list.sort(key=lambda tup: tup[1])
-    odir = os.path.join(wdir, "fastANI_out")
-    Path(odir).mkdir(parents=True, exist_ok=True)
-    cmds = []
-    ofiles = []
-    for file in file_list:
-        ofile = os.path.join(odir, "fastANI_out_" + str(file[0]) + "_" + str(file[1]))
-        cmd = " ".join(
-            [
-                "fastANI",
-                "-t",
-                str(slurm_threads),
-                "--ql",
-                files[file[0]],
-                "--rl",
-                files[file[1]],
-                "--fragLen",
-                str(int(frag_len)),
-                "-o",
-                ofile,
-            ]
-        )
-        cmds.append(cmd)
-        ofiles.append(ofile)
-    return cmds, ofiles, odir
+def create_slurm_commands(files, wdir, frag_len, slurm_threads, skani):
+    if not skani:
+        file_list = list(product(files.keys(), files.keys()))
+        file_list.sort(key=lambda tup: tup[1])
+        odir = os.path.join(wdir, "fastANI_out")
+        Path(odir).mkdir(parents=True, exist_ok=True)
+        cmds = []
+        ofiles = []
+        for file in file_list:
+            ofile = os.path.join(odir, "fastANI_out_" + str(file[0]) + "_" + str(file[1]))
+            cmd = " ".join(
+                [
+                    "fastANI",
+                    "-t",
+                    str(slurm_threads),
+                    "--ql",
+                    files[file[0]],
+                    "--rl",
+                    files[file[1]],
+                    "--fragLen",
+                    str(int(frag_len)),
+                    "-o",
+                    ofile,
+                ]
+            )
+            cmds.append(cmd)
+            ofiles.append(ofile)
+        return cmds, ofiles, odir
+    else:
+        file_list = list(combinations_with_replacement(files.keys(), 2))
+        file_list.sort(key=lambda tup: tup[1])
+        odir = os.path.join(wdir, "skani_out")
+        Path(odir).mkdir(parents=True, exist_ok=True)
+        cmds = []
+        ofiles = []
+        for file in file_list:
+            ofile = os.path.join(odir, "skani_out_" + str(file[0]) + "_" + str(file[1]))
+            cmd = " ".join(
+                [
+                    "skani",
+                    "dist",
+                    "-t",
+                    str(slurm_threads),
+                    "--ql",
+                    files[file[0]],
+                    "--rl",
+                    files[file[1]],
+                    "-o",
+                    ofile,
+                ]
+            )
+            cmds.append(cmd)
+            ofiles.append(ofile)
+        return cmds, ofiles, odir
 
 
 def check_slurm_output(files):
@@ -1298,7 +1325,7 @@ def dereplicate_ANI(
                 )
 
                 log.debug("Processing ANI results")
-                pairwise_distances = process_fastANI_results(ani_results)
+                pairwise_distances = process_skani_results(ani_results)
                 log.debug("Obtained {:,} comparisons".format(pairwise_distances.shape[0]))
 
 
@@ -1325,7 +1352,7 @@ def dereplicate_ANI(
             files, wdir = save_chunks_to_disk(chunks, temp_dir)
             # Create fastANI commands
             cmds, ofiles, odir = create_slurm_commands(
-                files, wdir, frag_len, slurm_threads
+                files, wdir, frag_len, slurm_threads, skani
             )
             # Run slurm array job
             pairwise_distances = map_slurm_jobs(
