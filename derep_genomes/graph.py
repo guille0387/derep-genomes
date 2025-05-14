@@ -331,6 +331,8 @@ def process_skani_results(rfile):
     df = pd.DataFrame(file_rows[1:], columns=file_rows[0])
     df = df.drop('Align_fraction_ref', axis=1)
     df.columns = ["source", "target", "ANI", "aln_frac"]
+    df["ANI"] = df["ANI"].astype(float)
+    df["aln_frac"] = df["aln_frac"].astype(float)
     os.remove(rfile)
     return df
 
