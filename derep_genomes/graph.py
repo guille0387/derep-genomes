@@ -24,6 +24,7 @@ import io, sys
 import numpy as np
 from functools import partial
 import random
+import csv
 
 log = logging.getLogger("my_logger")
 
@@ -323,11 +324,12 @@ def process_fastANI_results(rfile):
     return df
 
 def process_skani_results(rfile):
-    df = pd.read_csv(
-        rfile,
-        sep="\t",
-        usecols=lambda x: x not in ['Ref_name', 'Query_name', 'Align_fraction_ref'],
-        )
+    with open(rfile, newline='') as infile:
+        tsv_reader = csv.reader(infile, delimiter="\t")
+        file_rows = [row[:5] for row in tsv_reader]
+
+    df = pd.DataFrame(file_rows[1:], columns=file_rows[0])
+    df = df.drop('Align_fraction_ref', axis=1)
     df.columns = ["source", "target", "ANI", "aln_frac"]
     os.remove(rfile)
     return df
