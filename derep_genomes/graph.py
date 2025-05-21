@@ -812,7 +812,7 @@ def is_unique(s):
     return (a[0] == a).all()
 
 
-def estimate_frag_len(all_assemblies, min_genome_size, ani_fraglen_fraction):
+def estimate_frag_len(all_assemblies, min_genome_size, ani_fraglen_fraction, skani):
     assm_lens = all_assemblies["file"].map(lambda x: get_assembly_length(x)).tolist()
     x = min(assm_lens)
     if x < 3000:
@@ -823,11 +823,17 @@ def estimate_frag_len(all_assemblies, min_genome_size, ani_fraglen_fraction):
         else:
             frag_len = 3000
 
-    log.debug(
-        "Minimum assembly length of {}. fastANI fragment length used: {}".format(
-            x, frag_len
+    if not skani:
+        log.debug(
+            "Minimum assembly length of {}. fastANI fragment length used: {}".format(
+                x, frag_len
+            )
         )
-    )
+    
+    else:
+        log.debug(
+            "Minimum assembly length of {}".format(x)
+        )
 
     if frag_len == 0:
         return None
@@ -1290,14 +1296,15 @@ def dereplicate_ANI(
     derep_assemblies = []
     n_assemblies = all_assemblies.shape[0]
     all_assemblies_tmp = all_assemblies.copy()
+    ani_tool = 'skani' if skani else 'fastANI'
     with tempfile.TemporaryDirectory(dir=tmp_dir, prefix="gderep-") as temp_dir:
         failed = None
         if n_assemblies <= assm_max_post or slurm_config is None:
             if (n_assemblies * n_assemblies) < threads:
                 threads = n_assemblies * n_assemblies
             log.debug(
-                "Found {} assemblies, using default fastANI with {} threads".format(
-                    n_assemblies, threads
+                "Found {} assemblies, using default {} with {} threads".format(
+                    n_assemblies, ani_tool, threads
                 )
             )
 
@@ -1305,6 +1312,7 @@ def dereplicate_ANI(
                 all_assemblies_tmp,
                 min_genome_size,
                 ani_fraglen_fraction,
+                skani,
             )
 
             if frag_len is None:
@@ -1349,7 +1357,7 @@ def dereplicate_ANI(
             )
 
             frag_len = estimate_frag_len(
-                all_assemblies_tmp, min_genome_size, ani_fraglen_fraction
+                all_assemblies_tmp, min_genome_size, ani_fraglen_fraction, skani
             )
 
             if frag_len is None:
@@ -1387,8 +1395,8 @@ def dereplicate_ANI(
 
         if len(missing) > 0:
             log.debug(
-                "Missing {:,} assemblies in the fastANI comparison, Assemblies too divergent".format(
-                    len(missing)
+                "Missing {:,} assemblies in the {} comparison, Assemblies too divergent".format(
+                    len(missing), ani_tool
                 )
             )
 
