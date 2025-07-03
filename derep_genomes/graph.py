@@ -25,6 +25,7 @@ import numpy as np
 from functools import partial
 import random
 import csv
+import re
 
 log = logging.getLogger("my_logger")
 
@@ -336,6 +337,24 @@ def process_skani_results(rfile):
     os.remove(rfile)
     return df
 
+def process_skani_slurm_results(rfile):
+    chunk_1, chunk_2 = re.search(r'skani_out_(\d+)_(\d+)', rfile).groups()
+    if chunk_1 == chunk_2:
+        df = process_skani_results(rfile)
+    else:
+        with open(rfile, newline='') as infile:
+            tsv_reader = csv.reader(infile, delimiter="\t")
+            file_rows = [row[:5] for row in tsv_reader]
+        
+        df = pd.DataFrame(file_rows[1:], columns=file_rows[0])
+        df = df.astype({'ANI': float, 'Align_fraction_ref': float, 'Align_fraction_query': float})
+        df['aln_frac'] = df.loc[:, ['Align_fraction_ref', 'Align_fraction_query']].values.max(axis=1)
+        df = df.drop(['Align_fraction_ref', 'Align_fraction_query'], axis=1)
+        df.columns = ["source", "target", "ANI", "aln_frac"]
+        os.remove(rfile)
+    return df
+
+
 
 def generate_ANI_pairwise(df):
     df = df.copy()
@@ -538,6 +557,7 @@ def get_subgraphs_parallel(graph, partition, threads, threshold, stats=False):
         for i in set([partition[k] for k in partition]):
             nodes.append([k for k in partition if partition[k] == i])
 
+    threads = threads // 10
     p = Pool(
         threads,
         # initializer=initializer,
@@ -799,7 +819,7 @@ def reduce_slurm_jobs(ofiles, threads, skani):
         )
     else:
         dfs = list(
-            p.imap(process_skani_results, ofiles),
+            p.imap(process_skani_slurm_results, ofiles),
         )
     p.close()
     p.join()
