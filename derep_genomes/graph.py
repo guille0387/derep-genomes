@@ -1064,7 +1064,7 @@ def run_dashing(fname, threads, dashing_threshold, temp_dir):
 
     df_source = dashing_out.source.drop_duplicates().reset_index(drop=True)
     df_target = dashing_out.target.drop_duplicates().reset_index(drop=True)
-    df_assms = pd.concat([df_source, df_target]).to_frame()
+    df_assms = pd.concat([df_source, df_target]).to_frame().drop_duplicates().reset_index(drop=True)
     df_assms.columns = ["assm"]
 
     p = Pool(processes=threads)
